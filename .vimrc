@@ -8,17 +8,26 @@ set regexpengine=1
 
 call plug#begin('~/.vim/plugged')
 
-"==============================Navigation==============================
+"==============================General==============================
 Plug 'francoiscabrol/ranger.vim' 
 Plug 'preservim/nerdtree'
-Plug 'ludovicchabant/vim-gutentags'
-Plug 'ctrlpvim/ctrlp.vim'
-Plug 'AndrewRadev/sideways.vim'
+Plug 'skywind3000/gutentags_plus'
+"Plug 'ctrlpvim/ctrlp.vim'
+
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+
+Plug 'itchyny/lightline.vim'
+
+
+
+Plug 'mhinz/vim-signify' "show diff in sidebar
 
 "========================Syntax/General-Programming====================
-Plug 'vim-syntastic/syntastic'
+"Plug 'vim-syntastic/syntastic'
 Plug 'w0rp/ale'
-Plug 'neoclide/coc.nvim', {'tag': '*', 'do': './install.sh'}
+"Plug 'neoclide/coc.nvim', {'tag': '*', 'do': './install.sh'}
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
 "==============================RUBY==============================
 Plug 'vim-ruby/vim-ruby'
@@ -33,7 +42,6 @@ Plug 'plasticboy/vim-markdown'
 Plug 'octol/vim-cpp-enhanced-highlight'
 Plug 'ericcurtin/CurtineIncSw.vim'
 Plug 'vim-scripts/c.vim'
-Plug 'ludovicchabant/vim-gutentags'
 "==================Vimux==============================
 Plug 'benmills/vimux'
 
@@ -52,6 +60,7 @@ Plug 'tomasr/molokai'
 Plug 'crusoexia/vim-monokai'
 Plug 'morhetz/gruvbox'
 Plug 'dikiaap/minimalist'
+
 call plug#end()
 filetype plugin indent on    
 "==================General Settings Start==============="
@@ -102,13 +111,13 @@ autocmd FileType ruby setlocal omnifunc=LanguageClient#complete
 autocmd Filetype ruby set softtabstop=3
 autocmd Filetype ruby set sw=3
 autocmd Filetype ruby set ts=3
-autocmd CursorHold * silent call CocActionAsync('highlight')
+"autocmd CursorHold * silent call CocActionAsync('highlight')
 
 map <buffer> <silent> <C-k> :call CurtineIncSw()<CR>
 
 nmap <F2> <Plug>(coc-rename)
-nnoremap <silent> <C-p>  :<C-u>CocList -I symbols<cr>
-nmap <silent> gd <Plug>(coc-definition)
+"nnoremap <silent> <C-p>  :<C-u>CocList -I symbols<cr>
+"nmap <silent> gd <Plug>(coc-definition)
 
 function MakeExecuteable()
 	if getline(1) =~ "^#!.*/bin/"
@@ -128,18 +137,26 @@ let g:ale_fix_on_save = 0
 
 let ruby_spellcheck_strings = 1
 
+" ======== Gutentags ===========
+
+
+
 
 "=================Mappings========================
 let mapleader = "\<Space>"
-map <leader>e :find 
-map <leader>w :w<cr>
 "Jump 15 lines when holding shift
 
 "==============Navigation========================
+" =========== NORMAL =========
 map <leader>j <C-W>j
 map <leader>k <C-W>k
 map <leader>h <C-W>h
 map <leader>l <C-W>l
+
+nmap <C-p> :FZF<CR>
+nmap <C-t> :Tags<CR>
+map <leader>e :find 
+map <leader>w :w<cr>
 
 nmap K {
 nmap J }
@@ -178,16 +195,24 @@ nmap <C-b> :NERDTreeToggleVCS<cr>
 "map Æ mt]s
 map å ``t:call setreg('t',[])<CR>
 
+" go file
+map gf :e <cfile><CR>
+" go tag
+map gt <C-]> 
+
 " Indention in visual mode keeps selection
 map  ½ $
+"========= INSERT ==========
 imap ½ $
+"========= VISUAL ===========
+
+
 vmap ½ $
 
 xnoremap <S-Tab> < gv
 xnoremap <Tab> > gv
 xnoremap < <gv
 xnoremap > >gv
-map gf :e <cfile><CR>
 
 
 
@@ -230,47 +255,80 @@ endfunction
 
 
 
+fun! GetFuncName(prefix)
+   let funLine = search(a:prefix.' \w\+','bn')
+   try
+      return matchlist(getline(funLine),a:prefix.' \(\w\+\)')[1]
+   catch
+      return ""
+   endtry
+endfun
 
 
 
 "=========================-Statusline-=======================
 
-map <silent> <F7> :call SetRunMode()<cr>
-
-set laststatus=2
-set statusline=
-set statusline+=%9*
-set statusline+=%f
-set statusline+=%m
-set statusline+=\ 
-set statusline+=%{StatuslineMode()}
-set statusline+=\ %P
-set statusline+=\ 
-set statusline+=%y
-set statusline+=%=
-set statusline+=Run\ Mode:\%{g:runEnv}\ %{g:runCmd} 
-hi User9 ctermbg=black ctermfg=green guibg=black guifg=white
+let b:runMode="N/A"
+fun! LightLineMode()
+   try
+      :call exists(b:runMode)
+      return b:runMode
+   catch
+      return "N/A"
+   endtry
+   "if exists(b:runMode)
+"else 
+endfun
 
 
-function! StatuslineMode()
-   let l:mode=mode()
-   if l:mode==#"n"
-      return "NORMAL"
-   elseif l:mode==?"v"
-      return "VISUAL"
-   elseif l:mode==#"i"
-      return "INSERT"
-   elseif l:mode==#"R"
-      return "REPLACE"
-   elseif l:mode==?"s"
-      return "SELECT"
-   elseif l:mode==#"t"
-      return "TERMINAL"
-   elseif l:mode==#"c"
-      return "COMMAND"
-   elseif l:mode==#"!"
-      return "SHELL"
-   endif
-endfunction
+let b:content="N/A"
+let g:lightline = {
+      \ 'active': {
+      \   'right': [ [ 'lineinfo' ],
+      \              [ 'percent' ],
+      \              [ 'runMode','fileformat', 'fileencoding', 'filetype', 'charvaluehex' ] ]
+      \ },
+      \ 'component_function': {
+      \   'runMode': 'LightLineMode'
+      \ },
+      \ }
+"map <silent> <F7> :call SetRunMode()<cr>
+"
+"set laststatus=2
+"set statusline=
+"set statusline+=%9*
+"set statusline+=%f
+"set statusline+=%m
+"set statusline+=\ 
+"set statusline+=%{StatuslineMode()}
+"set statusline+=\ %P
+"set statusline+=\ 
+"set statusline+=%y
+"set statusline+=\ %{b:content}
+"set statusline+=%=
+"set statusline+=Run\ Mode:\%{g:runEnv}\ %{g:runCmd} 
+"hi User9 ctermbg=black ctermfg=green guibg=black guifg=white
+"
+"
+"function! StatuslineMode()
+"   let l:mode=mode()
+"   if l:mode==#"n"
+"      return "NORMAL"
+"   elseif l:mode==?"v"
+"      return "VISUAL"
+"   elseif l:mode==#"i"
+"      return "INSERT"
+"   elseif l:mode==#"R"
+"      return "REPLACE"
+"   elseif l:mode==?"s"
+"      return "SELECT"
+"   elseif l:mode==#"t"
+"      return "TERMINAL"
+"   elseif l:mode==#"c"
+"      return "COMMAND"
+"   elseif l:mode==#"!"
+"      return "SHELL"
+"   endif
+"endfunction
 "============================================================
 
