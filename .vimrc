@@ -9,19 +9,19 @@ set regexpengine=1
 call plug#begin('~/.vim/plugged')
 
 "==============================General==============================
-Plug 'francoiscabrol/ranger.vim' 
-Plug 'preservim/nerdtree'
+Plug 'vifm/vifm.vim'
+Plug 'ludovicchabant/vim-gutentags'
 Plug 'skywind3000/gutentags_plus'
-"Plug 'ctrlpvim/ctrlp.vim'
+
+Plug 'joereynolds/gtags-scope'
 
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
 Plug 'itchyny/lightline.vim'
 
-
-
-Plug 'mhinz/vim-signify' "show diff in sidebar
+Plug 'mhinz/vim-grepper'
+Plug 'mhinz/vim-signify' 
 
 "========================Syntax/General-Programming====================
 "Plug 'vim-syntastic/syntastic'
@@ -31,6 +31,7 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
 "==============================RUBY==============================
 Plug 'vim-ruby/vim-ruby'
+Plug 'thoughtbot/vim-rspec'
 Plug 'ecomba/vim-ruby-refactoring'
 Plug 'tmhedberg/matchit'
 
@@ -54,6 +55,7 @@ Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-dispatch'
 Plug 'tpope/vim-endwise'
 Plug 'tpope/vim-obsession'
+Plug 'tpope/vim-fugitive'
 
 "==================Colorschemes=======================
 Plug 'tomasr/molokai'
@@ -127,7 +129,15 @@ endfunction
 
 au BufWritePost *.* call MakeExecuteable()
 
+let g:ale_max_signs=10
+let g:ale_cache_executable_check_failures = 0
+let g:ale_enable =0
 
+"autocmd InsertEnter * ALEDisable
+"autocmd InsertLeave * ALEEnable
+
+
+let g:coc_disable_startup_warning = 1
 
 let g:ale_fixers = {
 \    'ruby': ['rubocop'],
@@ -139,60 +149,64 @@ let ruby_spellcheck_strings = 1
 
 " ======== Gutentags ===========
 
-
+set cscopetag "search both cscopes db and the tags file
+"let g:gutentags_modules = ['ctags', 'gtags_cscope']
+let g:gutentags_modules = ['ctags']
+let g:gutentags_project_root = ['.svn','.git']
+"let g:gutentags_cache_dir = expand('~/.cache/tags')
 
 
 "=================Mappings========================
 let mapleader = "\<Space>"
 "Jump 15 lines when holding shift
 
-"==============Navigation========================
-" =========== NORMAL =========
+"==================Window=Navigation========================
 map <leader>j <C-W>j
 map <leader>k <C-W>k
 map <leader>h <C-W>h
 map <leader>l <C-W>l
-
-nmap <C-p> :FZF<CR>
-nmap <C-t> :Tags<CR>
-map <leader>e :find 
-map <leader>w :w<cr>
-
-nmap K {
-nmap J }
-nmap H :SidewaysJumpLeft<CR>
-nmap L :SidewaysJumpRight<CR>
-nmap <C-H> :SidewaysJumpLeft<CR>
-nmap <C-L> :SidewaysJumpRight<CR>
 
 map <leader>H <C-W>H
 map <leader>J <C-W>J
 map <leader>K <C-W>K
 map <leader>L <C-W>L
 
+map <leader>v :vsplit<CR>
+map <leader>s :split<CR>
+
+"==================Project=Navigation========================
+
+
+nmap <C-p> :FZF<CR>
+nmap <C-f> :Rg<CR>
+
+nmap <C-t> :Tags<CR>
+
+nmap <C-b> :Vifm<cr>
+
+
+map <leader>w :w<cr>
+
+"==================File=Navigation========================
+nmap K {
+nmap J }
+
 "navigate buffers
-map <leader>½ :source ~/.vimrc<CR>
 map <leader>1 :bp<CR>
 map <leader>2 :bn<CR>
 
-"Open filetype config 
+"===============Vim Configuration==========================
+map <leader>½ :source ~/.vimrc<CR>
 map <leader>3 :e ~/.vim/ftplugin/%:e.vim<CR>
-noremap <leader>4 "nyiwu"oyiw<C-R>:%s/<C-R>o/<C-R>n/gi<CR>
+
 "close buffer
 map <leader>x :x<CR>
 
 " cteate splits
-map <leader>v :vsplit<CR>
-map <leader>s :split<CR>
 
 nmap <Tab> >>
 nmap <S-Tab> <<
-"Nerd Tree
-nmap <C-b> :NERDTreeToggleVCS<cr>
 
-"close tmux tunner
-"map æ mt[s
-"map Æ mt]s
 map å ``t:call setreg('t',[])<CR>
 
 " go file
@@ -206,7 +220,6 @@ map  ½ $
 imap ½ $
 "========= VISUAL ===========
 
-
 vmap ½ $
 
 xnoremap <S-Tab> < gv
@@ -214,10 +227,15 @@ xnoremap <Tab> > gv
 xnoremap < <gv
 xnoremap > >gv
 
+vmap " c"<C-r>""<esc>gv
+vmap ( c(<C-r>")<esc>gv
+vmap { c{<C-r>"}<esc>gv
+vmap [ c[<C-r>"]<esc>gv
+
+
 
 
 "======================== TMUX STUFF =============================
- 
 let g:runmode=0
 let g:runEnv=0
 let g:runCmd ="make"
@@ -253,8 +271,6 @@ function! TmuxSendCmdToTab(cmd)
    call system("tmux send-keys -t $session:".g:tmuxRunWin." '".g:runEnv.a:cmd."' C-m")
 endfunction
 
-
-
 fun! GetFuncName(prefix)
    let funLine = search(a:prefix.' \w\+','bn')
    try
@@ -263,8 +279,6 @@ fun! GetFuncName(prefix)
       return ""
    endtry
 endfun
-
-
 
 "=========================-Statusline-=======================
 
@@ -292,43 +306,4 @@ let g:lightline = {
       \   'runMode': 'LightLineMode'
       \ },
       \ }
-"map <silent> <F7> :call SetRunMode()<cr>
-"
-"set laststatus=2
-"set statusline=
-"set statusline+=%9*
-"set statusline+=%f
-"set statusline+=%m
-"set statusline+=\ 
-"set statusline+=%{StatuslineMode()}
-"set statusline+=\ %P
-"set statusline+=\ 
-"set statusline+=%y
-"set statusline+=\ %{b:content}
-"set statusline+=%=
-"set statusline+=Run\ Mode:\%{g:runEnv}\ %{g:runCmd} 
-"hi User9 ctermbg=black ctermfg=green guibg=black guifg=white
-"
-"
-"function! StatuslineMode()
-"   let l:mode=mode()
-"   if l:mode==#"n"
-"      return "NORMAL"
-"   elseif l:mode==?"v"
-"      return "VISUAL"
-"   elseif l:mode==#"i"
-"      return "INSERT"
-"   elseif l:mode==#"R"
-"      return "REPLACE"
-"   elseif l:mode==?"s"
-"      return "SELECT"
-"   elseif l:mode==#"t"
-"      return "TERMINAL"
-"   elseif l:mode==#"c"
-"      return "COMMAND"
-"   elseif l:mode==#"!"
-"      return "SHELL"
-"   endif
-"endfunction
-"============================================================
 
