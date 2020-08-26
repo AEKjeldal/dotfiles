@@ -2,9 +2,8 @@ set nocompatible
 let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
 let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
 set termguicolors
+set nowrap
 "set spell spelllang=en_us
-set lazyredraw
-set regexpengine=1
 
 call plug#begin('~/.vim/plugged')
 
@@ -18,6 +17,8 @@ Plug 'joereynolds/gtags-scope'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
+Plug 'justinmk/vim-sneak'
+
 Plug 'itchyny/lightline.vim'
 
 Plug 'mhinz/vim-grepper'
@@ -25,7 +26,7 @@ Plug 'mhinz/vim-signify'
 
 "========================Syntax/General-Programming====================
 "Plug 'vim-syntastic/syntastic'
-Plug 'w0rp/ale'
+"Plug 'w0rp/ale'
 "Plug 'neoclide/coc.nvim', {'tag': '*', 'do': './install.sh'}
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
@@ -104,9 +105,7 @@ colorscheme monokai
 "============================Autocomands===============
 au BufNewFile,BufRead,BufEnter *.cpp,*.hpp set omnifunc=omni#cpp#complete#Main
 au BufNewFile,BufRead,BufEnter *.cpp,*.hpp map <buffer> <silent> <C-k> :call CurtineIncSw()<CR>
-
 au BufNewFile,Bufread,BufEnter *.py noremap <silent> <buffer> <leader>m  :call VimuxRunCommandInDir('python2',1)<CR>
-
 au BufNewFile,Bufread,BufEnter *.m noremap <buffer> <leader>m  :call VimuxRunCommand(expand('%:r'))<CR>
 
 autocmd FileType ruby setlocal omnifunc=LanguageClient#complete
@@ -129,21 +128,18 @@ endfunction
 
 au BufWritePost *.* call MakeExecuteable()
 
-let g:ale_max_signs=10
-let g:ale_cache_executable_check_failures = 0
-let g:ale_enable =0
-
-"autocmd InsertEnter * ALEDisable
-"autocmd InsertLeave * ALEEnable
-
+"let g:ale_max_signs=10
+"let g:ale_cache_executable_check_failures = 0
+"let g:ale_enable =0
 
 let g:coc_disable_startup_warning = 1
+let g:coc_global_extensions = ['coc-solargraph']
 
-let g:ale_fixers = {
-\    'ruby': ['rubocop'],
-\}
+" let g:ale_fixers = {
+" \    'ruby': ['rubocop'],
+" \}
 
-let g:ale_fix_on_save = 0
+" let g:ale_fix_on_save = 0
 
 let ruby_spellcheck_strings = 1
 
@@ -210,7 +206,7 @@ nmap <S-Tab> <<
 map å ``t:call setreg('t',[])<CR>
 
 " go file
-map gf :e <cfile><CR>
+"map gf :e <cfile><CR>
 " go tag
 map gt <C-]> 
 
@@ -227,10 +223,16 @@ xnoremap <Tab> > gv
 xnoremap < <gv
 xnoremap > >gv
 
+" change surroundings of visual
 vmap " c"<C-r>""<esc>gv
 vmap ( c(<C-r>")<esc>gv
 vmap { c{<C-r>"}<esc>gv
 vmap [ c[<C-r>"]<esc>gv
+
+
+"======================== Fugitive =============================
+nmap <leader>gs :G<CR>
+nmap <leader>gc :Gw<CR>:Gcommit<cr>
 
 
 
@@ -282,7 +284,6 @@ endfun
 
 "=========================-Statusline-=======================
 
-let b:runMode="N/A"
 fun! LightLineMode()
    try
       :call exists(b:runMode)
@@ -297,13 +298,15 @@ endfun
 
 let b:content="N/A"
 let g:lightline = {
+		\ 'separator': { 'left': '', 'right': '' },
+		\ 'subseparator': { 'left': '', 'right': '' },
       \ 'active': {
       \   'right': [ [ 'lineinfo' ],
       \              [ 'percent' ],
-      \              [ 'runMode','fileformat', 'fileencoding', 'filetype', 'charvaluehex' ] ]
+      \              [ 'gitbranch','fileformat', 'fileencoding', 'filetype', 'charvaluehex' ] ]
       \ },
       \ 'component_function': {
-      \   'runMode': 'LightLineMode'
+      \   'gitbranch': 'FugitiveHead'
       \ },
       \ }
 
