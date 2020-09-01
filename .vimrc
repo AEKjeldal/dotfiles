@@ -230,6 +230,12 @@ vmap { c{<C-r>"}<esc>gv
 vmap [ c[<C-r>"]<esc>gv
 
 
+
+"search for filename
+nmap <C-2> :r!find . -name 
+
+
+
 "======================== Fugitive =============================
 nmap <leader>gs :G<CR>
 nmap <leader>gc :Gw<CR>:Gcommit<cr>
